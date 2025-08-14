@@ -1592,5 +1592,64 @@
         // Make responsive on resize
         window.addEventListener('resize', generatePressurePoints);
     </script>
+<!-- pressure-blink-script:start -->
+<script>
+(function() {
+  function hexToRgb(hex) {
+    const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return m ? { r: parseInt(m[1], 16), g: parseInt(m[2], 16), b: parseInt(m[3], 16) } : null;
+  }
+  function rgbToHex(r, g, b) {
+    const toHex = (v) => v.toString(16).padStart(2, '0');
+    return '#' + toHex(r) + toHex(g) + toHex(b);
+  }
+  function lerp(a, b, t) { return a + (b - a) * t; }
+
+  const stops = [
+    { p: 0,   c: '#0000ff' },
+    { p: 20,  c: '#00ffff' },
+    { p: 40,  c: '#00ff00' },
+    { p: 60,  c: '#ffff00' },
+    { p: 80,  c: '#ff8000' },
+    { p: 100, c: '#ff0000' }
+  ].map(s => ({ p: s.p, rgb: hexToRgb(s.c) }));
+
+  function getColor(pressure) {
+    if (pressure <= 0) return '#0000ff';
+    if (pressure >= 100) return '#ff0000';
+    let i = 0;
+    while (i < stops.length - 1 && pressure > stops[i+1].p) i++;
+    const a = stops[i], b = stops[i+1];
+    const span = b.p - a.p;
+    const t = (pressure - a.p) / span;
+    const r = Math.round(lerp(a.rgb.r, b.rgb.r, t));
+    const g = Math.round(lerp(a.rgb.g, b.rgb.g, t));
+    const bch = Math.round(lerp(a.rgb.b, b.rgb.b, t));
+    return rgbToHex(r, g, bch);
+  }
+
+  function blinkBodyParts() {
+    const paths = document.querySelectorAll('svg path');
+    paths.forEach(path => {
+      const pressure = Math.floor(Math.random() * 101);
+      const color = getColor(pressure);
+      path.style.transition = 'fill 0.25s ease, stroke 0.25s ease, fill-opacity 0.25s ease';
+      path.style.fill = color;
+      path.style.stroke = color;
+      path.style.fillOpacity = 0.85;
+      path.style.strokeOpacity = 0.9;
+      setTimeout(() => {
+        path.style.fillOpacity = 0.0;
+        path.style.strokeOpacity = 0.35;
+      }, 420);
+    });
+  }
+
+  if (!window.__pressureBlinkInterval) {
+    window.__pressureBlinkInterval = setInterval(blinkBodyParts, 900);
+  }
+})();
+</script>
+<!-- pressure-blink-script:end -->
 </body>
 </html>
